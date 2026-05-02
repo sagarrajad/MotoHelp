@@ -1,0 +1,75 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  body {
+    @apply transition-colors duration-300;
+  }
+}
+
+.dark body {
+  @apply bg-slate-950 text-slate-50;
+}
+
+.light body {
+  @apply bg-slate-50 text-slate-900;
+}
+
+.bento-card {
+  @apply rounded-2xl p-5 flex flex-col transition-all duration-200 border;
+}
+
+.dark .bento-card {
+  @apply bg-slate-900 border-slate-800 hover:border-sky-500/50;
+}
+
+.light .bento-card {
+  @apply bg-white border-slate-200 shadow-sm hover:border-sky-500/50;
+}
+
+.mono {
+  @apply font-mono;
+}
+
+.accent-blue {
+  @apply text-sky-400;
+}
+
+.accent-orange {
+  @apply text-orange-400;
+}
+
+/* Color-blind safe status indicators - using shapes and contrast */
+.status-badge {
+  @apply px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5;
+}
+
+.dark .status-ok {
+  @apply bg-sky-500/10 text-sky-400 border border-sky-500/20;
+}
+
+.light .status-ok {
+  @apply bg-sky-50 text-sky-600 border border-sky-200;
+}
+
+.dark .status-warning {
+  @apply bg-orange-500/10 text-orange-400 border border-orange-500/20;
+}
+
+.light .status-warning {
+  @apply bg-orange-50 text-orange-600 border border-orange-200;
+}
+
+.dark .status-critical {
+  @apply bg-rose-500/10 text-rose-400 border border-rose-500/20;
+}
+
+.light .status-critical {
+  @apply bg-rose-50 text-rose-600 border border-rose-200;
+}
+

@@ -1,0 +1,125 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // PHASE 3: Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Vehicle Validation
+    function isValidVehicle(data) {
+      return data.keys().hasAll(['ownerId', 'name', 'type', 'fuelType', 'currentOdometer']) &&
+             data.keys().size() >= 5 &&
+             data.ownerId == request.auth.uid &&
+             data.name is string && data.name.size() <= 100 &&
+             data.type in ['motorcycle', 'car'] &&
+             data.fuelType in ['petrol', 'diesel'] &&
+             data.currentOdometer is number && data.currentOdometer >= 0;
+    }
+
+    // FuelLog Validation
+    function isValidFuelLog(data) {
+      let vehicle = get(/databases/$(database)/documents/vehicles/$(data.vehicleId)).data;
+      return data.keys().hasAll(['vehicleId', 'userId', 'date', 'odometer', 'liters']) &&
+             data.userId == request.auth.uid &&
+             data.vehicleId is string &&
+             data.odometer is number && data.odometer >= vehicle.currentOdometer &&
+             data.liters is number && data.liters > 0;
+    }
+
+    // Relational Check: User owns the vehicle
+    function userOwnsVehicle(vehicleId) {
+      return get(/databases/$(database)/documents/vehicles/$(vehicleId)).data.ownerId == request.auth.uid;
+    }
+
+    // MAINTENANCE VALIDATION
+    function isValidMaintenance(data) {
+       let vehicle = get(/databases/$(database)/documents/vehicles/$(data.vehicleId)).data;
+       return data.keys().hasAll(['vehicleId', 'userId', 'date', 'type', 'cost']) &&
+              data.userId == request.auth.uid &&
+              data.cost is number && data.cost >= 0 &&
+              (!('odometer' in data) || (data.odometer is number && data.odometer >= vehicle.currentOdometer));
+    }
+
+    // DOCUMENT VALIDATION
+    function isValidDocument(data) {
+      return data.keys().hasAll(['userId', 'title', 'type', 'expiryDate']) &&
+             data.userId == request.auth.uid;
+    }
+
+    // --- COLLECTIONS ---
+
+    match /vehicles/{vehicleId} {
+      allow get: if isOwner(existing().ownerId) && isValidId(vehicleId);
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      
+      allow create: if isSignedIn() && isValidVehicle(incoming()) && isValidId(vehicleId);
+      
+      allow update: if isSignedIn() && 
+                    isOwner(existing().ownerId) && 
+                    isValidId(vehicleId) &&
+                    isValidVehicle(incoming()) && (
+                      // Action: Update Odometer
+                      incoming().diff(existing()).affectedKeys().hasOnly(['currentOdometer']) ||
+                      // Action: Update General Info
+                      incoming().diff(existing()).affectedKeys().hasOnly(['name', 'model', 'make', 'year'])
+                    );
+      
+      allow delete: if isOwner(existing().ownerId) && isValidId(vehicleId);
+    }
+
+    match /fuelLogs/{logId} {
+      allow get: if isOwner(existing().userId) && isValidId(logId);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      
+      allow create: if isSignedIn() && 
+                    isValidFuelLog(incoming()) && 
+                    userOwnsVehicle(incoming().vehicleId) &&
+                    isValidId(logId);
+                    
+      allow delete: if isOwner(existing().userId) && isValidId(logId);
+    }
+
+    match /maintenance/{refId} {
+      allow get: if isOwner(existing().userId) && isValidId(refId);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      
+      allow create: if isSignedIn() && 
+                    isValidMaintenance(incoming()) && 
+                    userOwnsVehicle(incoming().vehicleId) &&
+                    isValidId(refId);
+                    
+      allow delete: if isOwner(existing().userId) && isValidId(refId);
+    }
+
+    match /documents/{docId} {
+      allow get: if isOwner(existing().userId) && isValidId(docId);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      
+      allow create: if isSignedIn() && isValidDocument(incoming()) && isValidId(docId);
+      allow update: if isOwner(existing().userId) && isValidDocument(incoming()) && isValidId(docId);
+      allow delete: if isOwner(existing().userId) && isValidId(docId);
+    }
+  }
+}

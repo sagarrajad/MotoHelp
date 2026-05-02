@@ -1,0 +1,79 @@
+{
+  "entities": {
+    "Vehicle": {
+      "title": "Vehicle",
+      "description": "Details about a car or motorcycle",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "name": { "type": "string", "description": "e.g. My Ninja 400" },
+        "type": { "type": "string", "enum": ["motorcycle", "car"] },
+        "fuelType": { "type": "string", "enum": ["petrol", "diesel"] },
+        "model": { "type": "string" },
+        "make": { "type": "string" },
+        "year": { "type": "number" },
+        "initialOdometer": { "type": "number" },
+        "currentOdometer": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "name", "type", "fuelType", "currentOdometer"]
+    },
+    "FuelLog": {
+      "title": "Fuel Log",
+      "description": "A single fuel refill entry",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "vehicleId": { "type": "string" },
+        "userId": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "odometer": { "type": "number" },
+        "liters": { "type": "number" },
+        "pricePerLiter": { "type": "number" },
+        "totalCost": { "type": "number" },
+        "isFullTank": { "type": "boolean" }
+      },
+      "required": ["vehicleId", "userId", "date", "odometer", "liters"]
+    },
+    "Maintenance": {
+      "title": "Maintenance Record",
+      "description": "Servicing or repair work",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "vehicleId": { "type": "string" },
+        "userId": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "description": "e.g. Oil Change, Tire Replacement" },
+        "odometer": { "type": "number" },
+        "cost": { "type": "number" },
+        "notes": { "type": "string" },
+        "nextServiceOdometer": { "type": "number" },
+        "nextServiceDate": { "type": "string", "format": "date-time" }
+      },
+      "required": ["vehicleId", "userId", "date", "type", "cost"]
+    },
+    "Document": {
+      "title": "Document",
+      "description": "Insurance, Bluebook, or License renewal reminders",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "vehicleId": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "type": { "type": "string", "enum": ["insurance", "registration", "license", "other"] },
+        "expiryDate": { "type": "string", "format": "date-time" },
+        "reminderDays": { "type": "number" }
+      },
+      "required": ["userId", "title", "type", "expiryDate"]
+    }
+  },
+  "firestore": {
+    "vehicles": { "schema": "Vehicle", "description": "User vehicles" },
+    "fuelLogs": { "schema": "FuelLog", "description": "Refill history" },
+    "maintenance": { "schema": "Maintenance", "description": "Service records" },
+    "documents": { "schema": "Document", "description": "Important document reminders" }
+  }
+}
